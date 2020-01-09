@@ -4,7 +4,7 @@
         <payment>
             <moipbase>
                 <title>Config Moip</title>
-                <model>Moip\Magento2\Model\PaymentMethodBoleto</model>
+                <model>Moip\Magento2\Model\PaymentMethodCc</model>
                 <environment_mode>production</environment_mode>
                 <advanced>
                     <title>Config Avançada</title>
@@ -22,6 +22,9 @@
                     <street_complemento>3</street_complemento>
                     <street_district>2</street_district>
                 </advanced>
+                <split>
+                    <active>0</active>
+                </split>
             </moipbase>
             <moipcc>
                 <model>Moip\Magento2\Model\PaymentMethodCc</model>

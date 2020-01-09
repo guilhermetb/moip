@@ -24,7 +24,7 @@ define(
             {
                 title: 'Mastercard',
                 type: 'mastercard',
-                pattern: '^5([1-5]\\d*)?$',
+                pattern: '^(5[1-5][0-9]{14}|2(22[1-9][0-9]{12}|2[3-9][0-9]{13}|[3-6][0-9]{14}|7[0-1][0-9]{13}|720[0-9]{12}))$',
                 gaps: [4, 8, 12],
                 lengths: [16],
                 code: {
@@ -73,6 +73,17 @@ define(
                 pattern: '^(637095|637612|637599|637609|637568)',
                 gaps: [4, 8, 12],
                 lengths: [12, 13, 14, 15, 16, 17, 18, 19],
+                code: {
+                    name: 'CVV',
+                    size: 3
+                }
+            },
+            {
+                title: 'Diners',
+                type: 'diners',
+                pattern: '^(3(0[0-5]|095|6|[8-9]))\\d*$',
+                gaps: [4, 10],
+                lengths: [14, 16, 17, 18, 19],
                 code: {
                     name: 'CVV',
                     size: 3
