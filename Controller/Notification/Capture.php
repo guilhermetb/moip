@@ -36,22 +36,21 @@ class Capture extends \Magento\Framework\App\Action\Action implements CsrfAwareA
 		\Magento\Sales\Api\Data\OrderInterface $order,
 		\Magento\Sales\Model\OrderFactory $orderFactory,
 		\Moip\Magento2\Helper\Data $moipHelper,
-		\Magento\Framework\Controller\Result\JsonFactory $resultJsonFactory,
-		\Magento\Sales\Model\Order\Email\Sender\OrderCommentSender $orderCommentSender
+		\Magento\Framework\Controller\Result\JsonFactory $resultJsonFactory
 	) {
     	parent::__construct($context);
-    	$this->_resultJsonFactory = $resultJsonFactory;
+    	$this->resultJsonFactory = $resultJsonFactory;
         $this->_logger = $logger;
 		$this->order = $order;
 		$this->_orderFactory = $orderFactory;
 		$this->_moipHelper = $moipHelper;
-		$this->_orderCommentSender = $orderCommentSender;
 	}
 	
 	public function execute()
 	{
 
-		$resultJson = $this->_resultJsonFactory->create();
+		$resultJson = $this->resultJsonFactory->create();
+		$this->_logger->debug("entrou na capture");
 		$moip = $this->_moipHelper->AuthorizationValidate();
 		$response = file_get_contents('php://input');
 		$originalNotification = json_decode($response, true);
@@ -78,11 +77,8 @@ class Capture extends \Magento\Framework\App\Action\Action implements CsrfAwareA
 
 				$method = $payment->getMethodInstance();
 				try {
-					if(!$order->getInvoiceCollection()->count()){
-						$method->fetchTransactionInfo($payment, $transactionId);
-						$this->_orderCommentSender->send($order, 1, __('Pagamento Autorizado'));
-						$order->save();
-					}
+					$method->fetchTransactionInfo($payment, $transactionId);
+					$order->save();
 				} catch(\Exception $e) {
 					return $resultJson->setData(['success' => 0]);
 				}

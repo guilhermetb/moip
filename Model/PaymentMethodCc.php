@@ -33,7 +33,6 @@ class PaymentMethodCc extends \Magento\Payment\Model\Method\Cc
 	protected $_moipHelper;
 	protected $_canUseInternal          		= false;
 	protected $_canFetchTransactionInfo 		= true;
-	protected $_infoBlockType 					= 'Moip\Magento2\Block\Info\Cc';
 	
     public function __construct(
         \Magento\Framework\Model\Context $context,
@@ -72,7 +71,7 @@ class PaymentMethodCc extends \Magento\Payment\Model\Method\Cc
 
 
 	public function assignData(\Magento\Framework\DataObject $data)
-	{
+	 {
 		parent::assignData($data);
 		$additionalData = $data->getData(PaymentInterface::KEY_ADDITIONAL_DATA);
 			if (!is_array($additionalData)) {
@@ -81,63 +80,77 @@ class PaymentMethodCc extends \Magento\Payment\Model\Method\Cc
 		$infoInstance = $this->getInfoInstance();
 		$currentData = $data->getAdditionalData();
 		foreach($currentData as $key=>$value){
-			if($key == "cc_number"){
-				$value = substr($value, -4);
-			}
 			if ($key === \Magento\Framework\Api\ExtensibleDataInterface::EXTENSION_ATTRIBUTES_KEY) {
 				continue;
 			}
-
 			$infoInstance->setAdditionalInformation($key,$value);
 		}
 		return $this;
-	}
+	 }
 	
-	public function validate()
+	 public function validate()
     {
 		$moip = $this->_moipHelper->AuthorizationValidate();
         return $this;
     } 
 	
+	
+
     public function order(\Magento\Payment\Model\InfoInterface $payment, $amount)
     {
+		
 		$order = $payment->getOrder();
+		
 		try{
+			
 			if ($amount <= 0) {
                 throw new LocalizedException(__('Invalid amount for authorization.'));
             }
+			
 			$moip = $this->_moipHelper->AuthorizationValidate();
 			$objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+			
 			$customerMoip = $this->_moipHelper->generateCustomerMoip($order);
 			$this->_logger->debug(print_r($customerMoip, true));
+			
 			try {
-				$items 				= $this->_cart->getQuote()->getAllItems();
-				$InfoInstance 		= $this->getInfoInstance();
-				$moipOrder 			= $this->_moipHelper->initOrderMoip($moip, $order);
-				$itemsMoip 			= $this->_moipHelper->addProductItemsMoip($moipOrder, $items);
-				$shippingPriceMoip 	= $this->_moipHelper->addShippingPriceMoip($moipOrder, $order);
-				$discountPriceMoip 	= $this->_moipHelper->addDiscountPriceMoip($moipOrder, $order);
-				$installments 		= $InfoInstance->getAdditionalInformation('installments');
-				$additionalPrice	= $this->_moipHelper->addAdditionalPriceMoip($moipOrder, $order, $installments);
-				$moipOrder->setCustomer($customerMoip);
-				$moipOrder->create();
-				$this->_logger->debug(print_r($moipOrder, true));
-				$payMoip =  $this->_moipHelper->addPayCcMoip($moipOrder, $order, $InfoInstance, $payment);
-				$this->_logger->debug(print_r($payMoip, true));
-				$data_payment = [
-										'customer_id'=>$moipOrder->getCustomer()->getId(),
-										'fullname' 	=> $payMoip->getFundingInstrument()->creditCard->holder->fullname,
-										'ownId'=>$moipOrder->getOwnId(),
-										'installments'=> $payMoip->getInstallmentCount(),
-										'payid' =>  $payMoip->getId(),
-										'Pay' => json_encode($payMoip),
-										'Order' => json_encode($moipOrder),
-										'hash' => $InfoInstance->getAdditionalInformation('hash')
-								];
-				$payment->setTransactionId($moipOrder->getId())
-						->setIsTransactionClosed(0)
-						->setIsTransactionPending(1)
-						->setTransactionAdditionalInfo('raw_details_info',$data_payment);
+				
+				
+				
+
+					$items 				= $this->_cart->getQuote()->getAllItems();
+					$InfoInstance 		= $this->getInfoInstance();
+					$moipOrder 			= $this->_moipHelper->initOrderMoip($moip, $order);
+					$itemsMoip 			= $this->_moipHelper->addProductItemsMoip($moipOrder, $items);
+					$shippingPriceMoip 	= $this->_moipHelper->addShippingPriceMoip($moipOrder, $order);
+					$discountPriceMoip 	= $this->_moipHelper->addDiscountPriceMoip($moipOrder, $order);
+
+					$installments 		= $InfoInstance->getAdditionalInformation('installments');
+
+					$additionalPrice	= $this->_moipHelper->addAdditionalPriceMoip($moipOrder, $order, $installments);
+				
+					
+					$moipOrder->setCustomer($customerMoip);
+					$moipOrder->create();
+					$this->_logger->debug(print_r($moipOrder, true));
+
+					$payMoip =  $this->_moipHelper->addPayCcMoip($moipOrder, $order, $InfoInstance, $payment);
+					$this->_logger->debug(print_r($payMoip, true));
+
+					$data_payment = [
+											'customer_id'=>$moipOrder->getCustomer()->getId(),
+											'ownId'=>$moipOrder->getOwnId(),
+											'installments'=> $payMoip->getInstallmentCount(),
+											'payid' =>  $payMoip->getId(),
+											'Pay' => json_encode($payMoip),
+											'Order' => json_encode($moipOrder),
+											'hash' => $InfoInstance->getAdditionalInformation('hash')
+									];
+					
+					$payment->setTransactionId($moipOrder->getId())
+							->setIsTransactionClosed(0)
+							->setIsTransactionPending(1)
+							->setTransactionAdditionalInfo('raw_details_info',$data_payment);
 				}catch(\Exception $e) {
 		            throw new LocalizedException(__('Erro na criação do pagamento ' . $e->getMessage()));
 		        }
@@ -150,10 +163,13 @@ class PaymentMethodCc extends \Magento\Payment\Model\Method\Cc
 	public function fetchTransactionInfo(\Magento\Payment\Model\InfoInterface $payment, $transactionId, $comment = null)
     {	
     	$stateMoip = $this->_moipHelper->getStateOrderMoip($transactionId);
+    
+		
 		if($stateMoip == "PAID"){
-			$payment->setIsTransactionApproved(true)->setIsCustomerNotified(true)->setEmailSent(true)->save();
+			$payment->setIsTransactionApproved(true)->save();
     		$payment->capture(null)->save();
 		} elseif($stateMoip == "NOT_PAID"){
+
 			$payment->setIsTransactionDenied(true)->save();
 			$order = $payment->getOrder();
 			if($comment){
@@ -161,10 +177,16 @@ class PaymentMethodCc extends \Magento\Payment\Model\Method\Cc
 			} else {
 				$order->registerCancellation('Pagamento não autorizado')->save();
 			}
+			
+
 		} else {
 			parent::fetchTransactionInfo($payment, $transactionId);
 		}
+		
+
+    	
         return $this;
+
     }
 	
 	public function isAvailable(\Magento\Quote\Api\Data\CartInterface $quote = null)
@@ -174,4 +196,6 @@ class PaymentMethodCc extends \Magento\Payment\Model\Method\Cc
         }
 		return true;
 	}
+
+	
 }
